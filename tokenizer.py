@@ -134,6 +134,10 @@ merged = merged.assign(**{'scale':merged['frequency'].apply(scaler)})
 # decided to drop words with a total frequency of zero, since they were words that appeared the same number of times as both negative and positive words
 merged = merged.dropna()
 
+# Save removed articles (because of inexistence of article contents)
+deletable_index = []
+def get_deletable_index():
+    return deletable_index
 # function to retrieve text from links and tokenize them into sentences.
 def tokenize_sentence(url_dict):
     text = []
@@ -145,7 +149,12 @@ def tokenize_sentence(url_dict):
         article = requests.get(url_dict[key][0], headers = headers)
         soup = bs4.BeautifulSoup(article.content, 'html.parser')
         article_text_p = soup.find_all('p', attrs={'class': 'css-axufdj evys1bk0'})
+        if len(article_text_p) < 1:
+            deletable_index.append(key)
         abstract_text_p = soup.find('p', attrs={'class': 'css-w6ymp8 e1wiw3jv0'})
+        # Check if abstract_text_p exists
+        if abstract_text_p == '':
+            abstract_text_p = article_text_p
         title_text_h1 = soup.find('h1', attrs={'data-test-id': 'headline'})
         temp = []
         title.append(title_text_h1.text)
@@ -159,6 +168,12 @@ def tokenize_sentence(url_dict):
         space = ' '
         article_text = space.join(temp)
         text.append(article_text)
+
+    # Delete articles that do not have texts in it (or simply did not retrieve content (for unknown reason))
+    for index in deletable_index:
+        del text[index]
+        del title[index]
+        del abstract[index]
 
     # Word Tokenization to sentences 
 
